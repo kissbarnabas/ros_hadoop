@@ -38,8 +38,8 @@ RUN mkdir -p /opt/ros_hadoop/latest
 RUN mkdir -p /opt/ros_hadoop/master/dist/
 RUN mkdir -p /opt/apache/
 ADD . /opt/ros_hadoop/master
-RUN bash -c "curl -s https://api.github.com/repos/valtech/ros_hadoop/releases/latest | egrep -io 'https://api.github.com/repos/valtech/ros_hadoop/tarball/[^\"]*' | xargs wget --quiet -O /opt/ros_hadoop/latest.tgz"
-RUN bash -c "if [ ! -f /opt/ros_hadoop/master/dist/hadoop-3.0.2.tar.gz ] ; then wget --quiet -O /opt/ros_hadoop/master/dist/hadoop-3.0.2.tar.gz http://www.eu.apache.org/dist/hadoop/common/hadoop-3.0.2/hadoop-3.0.2.tar.gz ; fi"
+RUN bash -c "curl -s https://api.github.com/repositories/84569622/releases/latest | egrep -io 'https://api.github.com/repos/autovia/ros_hadoop/tarball/v0.9.11' | xargs wget --quiet -O /opt/ros_hadoop/latest.tgz"
+RUN bash -c "if [ ! -f /opt/ros_hadoop/master/dist/hadoop-3.0.2.tar.gz ] ; then wget --quiet -O /opt/ros_hadoop/master/dist/hadoop-3.0.2.tar.gz https://archive.apache.org/dist/hadoop/common/hadoop-3.0.2/hadoop-3.0.2.tar.gz ; fi"
 RUN tar -xzf /opt/ros_hadoop/latest.tgz -C /opt/ros_hadoop/latest --strip-components=1 && rm /opt/ros_hadoop/latest.tgz
 RUN tar -xzf /opt/ros_hadoop/master/dist/hadoop-3.0.2.tar.gz -C /opt/apache && rm /opt/ros_hadoop/master/dist/hadoop-3.0.2.tar.gz
 
@@ -55,18 +55,25 @@ RUN printf "<configuration>\n\n<property>\n<name>fs.defaultFS</name>\n<value>hdf
 RUN printf "#! /bin/bash\nset -e\nsource \"/opt/ros/$ROS_DISTRO/setup.bash\"\n/start_hadoop.sh\nexec \"\$@\"\n" > /ros_hadoop.sh && \
     chmod a+x /ros_hadoop.sh
 
-RUN bash -c "if [ ! -f /opt/ros_hadoop/master/dist/HMB_4.bag ] ; then wget --quiet -O /opt/ros_hadoop/master/dist/HMB_4.bag https://xfiles.valtech.io/f/c494d168522045e3bcc0/?dl=1 ; fi" && \
-    java -jar "$ROSIF_JAR" -f /opt/ros_hadoop/master/dist/HMB_4.bag
+RUN bash -c "if [ ! -f /opt/ros_hadoop/master/dist/2011-01-24-06-18-27.bag ] ; then wget --quiet -O /opt/ros_hadoop/master/dist/2011-01-24-06-18-27.bag http://infinity.csail.mit.edu/data/2011/2011-01-24-06-18-27.bag ; fi" && \
+    java -jar "$ROSIF_JAR" -f /opt/ros_hadoop/master/dist/2011-01-24-06-18-27.bag
 
 RUN bash -c "/start_hadoop.sh" && \
     /opt/apache/hadoop/bin/hdfs dfsadmin -safemode wait && \
     /opt/apache/hadoop/bin/hdfs dfsadmin -report && \
     /opt/apache/hadoop/bin/hdfs dfs -mkdir /user && \
     /opt/apache/hadoop/bin/hdfs dfs -mkdir /user/root && \
-    /opt/apache/hadoop/bin/hdfs dfs -put /opt/ros_hadoop/master/dist/HMB_4.bag && \
+    /opt/apache/hadoop/bin/hdfs dfs -put /opt/ros_hadoop/master/dist/2011-01-24-06-18-27.bag && \
     /opt/apache/hadoop/bin/hdfs --daemon stop datanode && \
     /opt/apache/hadoop/bin/hdfs --daemon stop namenode
+
+RUN pip2 install --upgrade pyspark==2.1.2
+RUN pip2 install python-dateutil==2.6.0
+RUN pip2 install numpy
+RUN pip2 install pandas
 
 WORKDIR /opt/ros_hadoop/latest/doc/
 ENTRYPOINT ["/ros_hadoop.sh"]
 CMD ["jupyter", "notebook", "--allow-root", "--ip=0.0.0.0"]
+
+
